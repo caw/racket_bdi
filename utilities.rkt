@@ -1,5 +1,10 @@
 #lang racket
 
+;;
+;; A transliteration of the code in Paul Graham's ANSI Common Lisp
+;; 
+
+
 (define rules (make-hash))
 
 ; not quite, but nearly
@@ -78,9 +83,11 @@
 (define (vars-in expr)
   (if (atom? expr)
       (if (var? expr)
-          (list expr))
-          (remove-duplicates (cons (vars-in (car expr))
-                                   (vars-in (cdr expr))))))
+          (list expr)
+          '())
+      (let ((car-vars (vars-in (car expr)))
+            (cdr-vars (vars-in (cdr expr))))
+        (remove-duplicates (append car-vars cdr-vars)))))
 
 (define (change-vars expr)
   (sublis (map (lambda (v) (cons v (gensyn "?")))
