@@ -45,6 +45,7 @@
             (cdr b))
         #f)))
 
+
 (match '(p a b c a) '(p ?x ?y c ?x))
 (match '(p ?x b ?y a) '(p ?y b c a))
 (match '(a b c) '(a a a))
@@ -60,7 +61,7 @@
      [(_ con)
           (with-syntax ([rules (datum->syntax stx 'rules)])
        #`(let ((k (car 'con))
-               (v (cdr 'con)))
+               (v (cons (cdr 'con) '())))
            (hash-set! rules k (cons v (hash-ref rules k '())))
            (length (hash-ref rules k))))]
     [(_ con ant)
@@ -70,15 +71,26 @@
              (hash-set! rules k (cons v (hash-ref rules k '())))
              (length (hash-ref rules k))))]))
 
-(<- (parent donald nancy))
-(<- (child ?x ?y) (?parent ?y x))
 
 (define (prove expr [binds '()])
   (case (car expr)
     ((and) (prove-and (reverse (cdr expr)) binds))
     ((or) (prove-or (cdr expr) binds))
     ((not) (prove-not (cadr expr) binds))
-    ((else) (prove-simple (car expr) (cdr expr) binds))))
+    (else (prove-simple (car expr) (cdr expr) binds))))
+
+(define (prove-simple pred args binds)
+  ; pred 'child
+  ; args '(?x ?y)
+  ; binds ()
+  (append-map (lambda (r)
+                (let-values (((b2 yes) (match args (car r) binds)))
+                  (when yes
+                    (if (null? (cdr r))
+                          (list b2)
+                          (prove (cdr r) b2)))))
+              (map change-vars (hash-ref rules pred))))
+                  
 
 (define (vars-in expr)
   (if (atom? expr)
@@ -90,5 +102,46 @@
         (remove-duplicates (append car-vars cdr-vars)))))
 
 (define (change-vars expr)
-  (sublis (map (lambda (v) (cons v (gensyn "?")))
+  (sublis (map (lambda (v) (cons v (gensym "?_")))
                (vars-in expr))
+          expr))
+
+(define (prove-and clauses binds)
+  (if (null? clauses)
+      binds
+      (append-map (lambda (b)
+                    (prove (car clauses) b))
+                  (prove-and (cdr clauses) binds))))
+
+(define (prove-or clauses binds)
+  (append-map (lambda (c) (prove c binds))
+              clauses))
+
+(define (prove-not clause binds)
+  (unless (prove clause binds)
+    (list binds)))
+
+
+(writeln "DB assertions:")
+
+
+(<- (parent donald nancy))
+(<- (child ?x ?y) (parent ?y ?x))
+
+(writeln "Testing prove:")
+
+(prove-simple 'parent '(donald nancy) '())
+(prove-simple 'child '(?x ?y) '())
+
+(begin-for-syntax
+  (define (bindin s)
+    (case s
+      ('a 1)
+      ('b 2)
+      ('c 3))))
+
+(define (symbol->ascii s)
+  (char->integer (car (string->list (symbol->string s)))))
+
+(symbol->ascii 'a)
+               
