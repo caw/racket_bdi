@@ -50,10 +50,10 @@
 (match '(p ?x b ?y a) '(p ?y b c a))
 (match '(a b c) '(a a a))
 (match '(p ?x) '(p ?x))
-(match '(p ?v b ?x d (?z ?z))'(p a ?w c ?y(e e)) '((?v . a) (?w . b)))
+(match '(p ?v b ?x d (?z ?z))'(p a ?w c ?y (e e)) '((?v . a) (?w . b)))
 
 
-;; 1. There will be a cleaner way to do this (capture of globval "rules")
+;; 1. There will be a cleaner way to do this (capture of global "rules")
 ;; 2. There will be cleaner way to do optional arguments, instead of 2 entries into the syntax-case form
 
 (define-syntax (<- stx)
@@ -133,15 +133,3 @@
 (prove-simple 'parent '(donald nancy) '())
 (prove-simple 'child '(?x ?y) '())
 
-(begin-for-syntax
-  (define (bindin s)
-    (case s
-      ('a 1)
-      ('b 2)
-      ('c 3))))
-
-(define (symbol->ascii s)
-  (char->integer (car (string->list (symbol->string s)))))
-
-(symbol->ascii 'a)
-               
